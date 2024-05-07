@@ -5,20 +5,15 @@ BUILDOPTS = -a -tags netgo
 LDFLAGS = -ldflags '-s -w -extldflags "-static" -X main.version=$(VERSION)'
 LDFLAGS_NATIVE = -ldflags '-s -w -X main.version=$(VERSION)'
 
-NDK_CC_ARM = $(abspath ../../ndk-toolchain-arm/bin/arm-linux-androideabi-gcc)
-NDK_CC_ARM64 = $(abspath ../../ndk-toolchain-arm64/bin/aarch64-linux-android21-clang)
+#NDK_CC_ARM = $(abspath ../../ndk-toolchain-arm/bin/arm-linux-androideabi-gcc)
+#NDK_CC_ARM64 = $(abspath ../../ndk-toolchain-arm64/bin/aarch64-linux-android21-clang)
 
 GO := go
 
 src = $(wildcard *.go)
 
 native: bin-native
-all: bin-linux-amd64 bin-linux-386 bin-linux-arm \
-	bin-freebsd-amd64 bin-freebsd-386 bin-freebsd-arm \
-	bin-netbsd-amd64 bin-netbsd-386 \
-	bin-openbsd-amd64 bin-openbsd-386 \
-	bin-darwin-amd64 bin-darwin-arm64 \
-	bin-windows-amd64 bin-windows-386 bin-windows-arm
+all: bin-linux-amd64
 
 allplus: all \
 	bin-android-arm bin-android-arm64
