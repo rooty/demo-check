@@ -49,7 +49,7 @@ var (
 
 func init() {
 	flag.IntVar(&numThread, "n", 20, "Num thread.")
-	flag.StringVar(&DbHostName, "d", "cas-db-stage.int.slotcatalog.com", "db host name")
+	#flag.StringVar(&DbHostName, "d", "cas-db-stage.int.slotcatalog.com", "db host name")
 	flag.BoolVar(&printUsage, "h", false, "Print usage")
 	flag.Parse()
 	if printUsage {
