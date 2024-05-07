@@ -26,7 +26,6 @@ type DemoURL struct {
 	PlayURL  string `json:"url"`
 }
 
-// SafeCounter is safe to use concurrently.
 type SafeCounter struct {
 	mu        sync.Mutex
 	numThread int
@@ -42,7 +41,6 @@ var (
 	numThread  int
 	printUsage bool
 
-	//logger *log.Logger
 	// %s:%s@tcp(%s)/%s login:password@tcp/host/dbname
 	DB_DSN = ""
 )
@@ -75,7 +73,6 @@ func main() {
 
 	counter = SafeCounter{count: 0, numThread: 0}
 	ts1 := time.Now()
-	// db, err = sql.Open("mysql", dsn(dbname))
 	db, err = sql.Open("mysql", DB_DSN)
 	if err != nil {
 		log.Fatalf("Error %s when opening DB\n", err)
@@ -83,7 +80,6 @@ func main() {
 	}
 	defer db.Close()
 
-	// See "Important settings" section.
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
@@ -114,7 +110,6 @@ func main() {
 	defer rows.Close()
 
 	lock := make(chan bool, numThread)
-	//wg = new(sync.WaitGroup)
 
 	for rows.Next() {
 		var row DemoURL
@@ -122,13 +117,10 @@ func main() {
 			log.Println(err.Error())
 		} else {
 			wg.Add(1)
-			//go worker(wg, row, lock, db)
 			go worker(row, lock)
 		}
-		//time.Sleep(time.Second * 1)
 	}
 	wg.Wait()
-	//tims := time.Now().Sub(ts1)
 	tims := time.Since(ts1)
 	fmt.Printf("Execute time %s\n", tims)
 }
@@ -141,7 +133,6 @@ func saveAccess(urlrow DemoURL, status int, detail string) {
 		detail = convertHTTPError(status)
 	}
 
-	//Prepare statement for inserting data
 	stmtIns, err := db.Prepare(
 		"INSERT INTO demo_url_check(url_id, platform, http_code, detail, last_at) VALUES( ?, ?,?,?,now() ) ")
 	if err != nil {
@@ -171,7 +162,6 @@ func worker(urlrow DemoURL, lock chan bool) {
 		"Chrome/49.0.2623.63 Safari/537.36")
 	lock <- true
 	counter.IncThread()
-	//res, err1 := http.Get(urlrow.Play_URL)
 	res, err := client.Do(req)
 	counter.DecThread()
 	<-lock
@@ -179,20 +169,17 @@ func worker(urlrow DemoURL, lock chan bool) {
 
 	if err != nil {
 		// какая-то сетевая ощибка, мы ничего не получили
-		//hasNetError(err)
-		//detail := err.Error()
+		// hasNetError(err)
+		// detail := err.Error()
 		detail := GetNetError2String(err)
-		//go saveAccess(urlrow, 0, detail, dblink)
 		go saveAccess(urlrow, 0, detail)
 		return
 	} else {
 		if res.StatusCode == http.StatusBadRequest {
-			// log.Printf("Status Code:%d Id:%d Thread: %d\n", res.StatusCode, urlrow.Id, counter.GetThread())
 			fmt.Print("*")
 		} else if res.StatusCode == http.StatusTooManyRequests {
 			fmt.Print("E")
 		} else if res.StatusCode == http.StatusOK {
-			// log.Printf("Status Code:%d Id:%d Thread: %d\n", res.StatusCode, urlrow.Id, counter.GetThread())
 			fmt.Print(".")
 		} else {
 			go saveAccess(urlrow, res.StatusCode, "")
@@ -249,7 +236,6 @@ func hasTimeOut(err error) bool {
 		log.Println(err.Error())
 	}
 	errTxt := "use of closed network connection"
-	//if err != nil && strings.Contains(err.Error(), errTxt) {
 	if strings.Contains(err.Error(), errTxt) {
 		return true
 	}
@@ -287,36 +273,29 @@ func convertHTTPError(httpErrorCode int) string {
 	}
 }
 
-// Inc increments the counter for the given key.
 func (c *SafeCounter) IncCounter() {
 	c.mu.Lock()
-	// Lock so only one goroutine at a time can access the map c.v.
 	c.count++
 	c.mu.Unlock()
 }
 func (c *SafeCounter) IncThread() {
 	c.mu.Lock()
-	// Lock so only one goroutine at a time can access the map c.v.
 	c.numThread++
 	c.mu.Unlock()
 }
 func (c *SafeCounter) DecThread() {
 	c.mu.Lock()
-	// Lock so only one goroutine at a time can access the map c.v.
 	c.numThread--
 	c.mu.Unlock()
 }
 
-// Value returns the current value of the counter for the given key.
 func (c *SafeCounter) GetCounter() int {
 	c.mu.Lock()
-	// Lock so only one goroutine at a time can access the map c.v.
 	defer c.mu.Unlock()
 	return c.count
 }
 func (c *SafeCounter) GetThread() int {
 	c.mu.Lock()
-	// Lock so only one goroutine at a time can access the map c.v.
 	defer c.mu.Unlock()
 	return c.numThread
 }
