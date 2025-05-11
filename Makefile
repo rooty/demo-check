@@ -8,6 +8,7 @@ LDFLAGS_NATIVE = -ldflags '-s -w -X main.version=$(VERSION)'
 #NDK_CC_ARM = $(abspath ../../ndk-toolchain-arm/bin/arm-linux-androideabi-gcc)
 #NDK_CC_ARM64 = $(abspath ../../ndk-toolchain-arm64/bin/aarch64-linux-android21-clang)
 
+
 GO := go
 
 src = $(wildcard *.go)
