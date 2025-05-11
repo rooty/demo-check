@@ -58,72 +58,6 @@ func init() {
 		log.Println("don't load .env")
 	}
 }
-func main() {
-	DB_DSN, ok := os.LookupEnv("DB_DSN")
-	if !ok {
-		log.Fatal("DB_DSN not set")
-		os.Exit(-1)
-	}
-	//proxyUrl, _ := url.Parse("http://127.0.0.1:5566")
-	//http.DefaultTransport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	http.DefaultTransport.(*http.Transport).IdleConnTimeout = 60 * time.Second
-
-	var err error
-
-	counter = SafeCounter{count: 0, numThread: 0}
-	ts1 := time.Now()
-	db, err = sql.Open("mysql", DB_DSN)
-	if err != nil {
-		log.Fatalf("Error %s when opening DB\n", err)
-		// return
-	}
-	defer db.Close()
-
-	db.SetConnMaxLifetime(time.Minute * 3)
-	db.SetMaxOpenConns(10)
-	db.SetMaxIdleConns(10)
-
-	db.Exec("CREATE TABLE IF NOT EXISTS demo_url_check (" +
-		"`url_id` int(11) DEFAULT 0," +
-		"`platform` TINYINT UNSIGNED DEFAULT 0," +
-		"`http_code` INT(11) UNSIGNED DEFAULT 0, " +
-		"`detail` TEXT DEFAULT '', " +
-		"`last_at` timestamp NULL DEFAULT current_timestamp()," +
-		"PRIMARY KEY (`url_id`, `platform`))")
-	if err != nil {
-		log.Fatal(err.Error()) // proper error handling instead of panic in your app
-	}
-	_, err = db.Exec("TRUNCATE demo_url_check")
-	if err != nil {
-		log.Fatal(err.Error()) // proper error handling instead of panic in your app
-	}
-
-	rows, err := db.Query("SELECT id, 0 platform, translit, REPLACE(TRIM(REPLACE(Play_URL, '&amp;', '&')), '\t','') url  " +
-		"FROM `itc_slots` WHERE NOT `play_URL` IS NULL and `play_URL` != '' " +
-		"UNION ALL " +
-		"SELECT id, 1 platform, translit, REPLACE(TRIM(REPLACE(play_url_mob, '&amp;', '&')), '\t','') url   " +
-		"FROM `itc_slots` WHERE NOT `play_url_mob` IS NULL and `play_URL` != '' ")
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	defer rows.Close()
-
-	lock := make(chan bool, numThread)
-
-	for rows.Next() {
-		var row DemoURL
-		if err := rows.Scan(&row.Id, &row.Platform, &row.Translit, &row.PlayURL); err != nil {
-			log.Println(err.Error())
-		} else {
-			wg.Add(1)
-			go worker(row, lock)
-		}
-	}
-	wg.Wait()
-	tims := time.Since(ts1)
-	fmt.Printf("Execute time %s\n", tims)
-}
 
 func saveAccess(urlrow DemoURL, status int, detail string) {
 	if status == http.StatusOK {
@@ -298,4 +232,71 @@ func (c *SafeCounter) GetThread() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.numThread
+}
+
+func main() {
+	DB_DSN, ok := os.LookupEnv("DB_DSN")
+	if !ok {
+		log.Fatal("DB_DSN not set")
+		os.Exit(-1)
+	}
+	//proxyUrl, _ := url.Parse("http://127.0.0.1:5566")
+	//http.DefaultTransport.(*http.Transport).Proxy = http.ProxyURL(proxyUrl)
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	http.DefaultTransport.(*http.Transport).IdleConnTimeout = 60 * time.Second
+
+	var err error
+
+	counter = SafeCounter{count: 0, numThread: 0}
+	ts1 := time.Now()
+	db, err = sql.Open("mysql", DB_DSN)
+	if err != nil {
+		log.Fatalf("Error %s when opening DB\n", err)
+		// return
+	}
+	defer db.Close()
+
+	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
+
+	db.Exec("CREATE TABLE IF NOT EXISTS demo_url_check (" +
+		"`url_id` int(11) DEFAULT 0," +
+		"`platform` TINYINT UNSIGNED DEFAULT 0," +
+		"`http_code` INT(11) UNSIGNED DEFAULT 0, " +
+		"`detail` TEXT DEFAULT '', " +
+		"`last_at` timestamp NULL DEFAULT current_timestamp()," +
+		"PRIMARY KEY (`url_id`, `platform`))")
+	if err != nil {
+		log.Fatal(err.Error()) // proper error handling instead of panic in your app
+	}
+	_, err = db.Exec("TRUNCATE demo_url_check")
+	if err != nil {
+		log.Fatal(err.Error()) // proper error handling instead of panic in your app
+	}
+
+	rows, err := db.Query("SELECT id, 0 platform, translit, REPLACE(TRIM(REPLACE(Play_URL, '&amp;', '&')), '\t','') url  " +
+		"FROM `itc_slots` WHERE NOT `play_URL` IS NULL and `play_URL` != '' " +
+		"UNION ALL " +
+		"SELECT id, 1 platform, translit, REPLACE(TRIM(REPLACE(play_url_mob, '&amp;', '&')), '\t','') url   " +
+		"FROM `itc_slots` WHERE NOT `play_url_mob` IS NULL and `play_URL` != '' ")
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	defer rows.Close()
+
+	lock := make(chan bool, numThread)
+
+	for rows.Next() {
+		var row DemoURL
+		if err := rows.Scan(&row.Id, &row.Platform, &row.Translit, &row.PlayURL); err != nil {
+			log.Println(err.Error())
+		} else {
+			wg.Add(1)
+			go worker(row, lock)
+		}
+	}
+	wg.Wait()
+	tims := time.Since(ts1)
+	fmt.Printf("Execute time %s\n", tims)
 }
