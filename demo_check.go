@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -138,43 +137,44 @@ func GetNetError2String(errext error) string {
 	}
 	return ret
 }
-func hasNetError(errext error) {
-	switch err := errext.(type) {
-	case *url.Error:
-		if err.Timeout() {
-			log.Printf("timeout: %s", err.Err)
-		} else if err1, ok := err.Err.(*net.OpError); ok {
-			log.Printf("net error: %s", err1)
-		} else {
-			log.Printf("original error: %T", err.Err.Error())
-		}
-	default:
-		log.Printf("unknown error: %v", err)
-	}
-}
 
-func hasTimeOut(err error) bool {
-	switch err := err.(type) {
-	case *url.Error:
-		if err, ok := err.Err.(net.Error); ok && err.Timeout() {
-			return true
-		}
-	case net.Error:
-		if err.Timeout() {
-			return true
-		}
-	case *net.OpError:
-		if err.Timeout() {
-			return true
-		}
-		log.Println(err.Error())
-	}
-	errTxt := "use of closed network connection"
-	if strings.Contains(err.Error(), errTxt) {
-		return true
-	}
-	return false
-}
+// func hasNetError(errext error) {
+// 	switch err := errext.(type) {
+// 	case *url.Error:
+// 		if err.Timeout() {
+// 			log.Printf("timeout: %s", err.Err)
+// 		} else if err1, ok := err.Err.(*net.OpError); ok {
+// 			log.Printf("net error: %s", err1)
+// 		} else {
+// 			log.Printf("original error: %T", err.Err.Error())
+// 		}
+// 	default:
+// 		log.Printf("unknown error: %v", err)
+// 	}
+// }
+
+// func hasTimeOut(err error) bool {
+// 	switch err := err.(type) {
+// 	case *url.Error:
+// 		if err, ok := err.Err.(net.Error); ok && err.Timeout() {
+// 			return true
+// 		}
+// 	case net.Error:
+// 		if err.Timeout() {
+// 			return true
+// 		}
+// 	case *net.OpError:
+// 		if err.Timeout() {
+// 			return true
+// 		}
+// 		log.Println(err.Error())
+// 	}
+// 	errTxt := "use of closed network connection"
+// 	if strings.Contains(err.Error(), errTxt) {
+// 		return true
+// 	}
+// 	return false
+// }
 
 func convertHTTPError(httpErrorCode int) string {
 	switch httpErrorCode {
